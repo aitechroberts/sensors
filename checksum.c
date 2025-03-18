@@ -51,7 +51,7 @@ uint16_t ccitt16(uint8_t message[], int length) {
             }
         }
     }
-    return result;
+    return ~result;
 }
 
 int main(int argc, char *argv[]) {

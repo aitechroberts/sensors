@@ -5,7 +5,7 @@
 /*
 XOR Checksum
 */
-uint8_t xor_checksum(uint8_t message[], int length) {
+uint8_t xor(uint8_t message[], int length) {
     // Standard msg exists check
     if (length == 0) {
         return 0;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
 
     // Compute checksums
-    uint8_t xor_val = xor_checksum(message, length);
+    uint8_t xor_val = xor(message, length);
     uint16_t ccitt_val = ccitt16(message, length);
 
     // Print results (you can change the format as required by your assignment)

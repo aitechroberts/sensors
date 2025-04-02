@@ -123,16 +123,29 @@ static void handle_message_payload(const uint8_t *payload, int payload_len) {
 
   // Respond to PING (0x01) with token+1
   if (command == 0x01) {
-    if (payload_len < 2) {
-      // Not enough data for a PING token
-      return;
+    // Must have at least 2 bytes: [0x01, token]
+    if (payload_len < 2) { 
+        // If there's only 1 byte (the command), we might treat it as invalid
+        // or we might silently ignore. Up to you; some tests require a response.
+        return;
     }
     uint8_t token = payload[1];
-    uint8_t response[2];
-    response[0] = 0x01;      // same command
-    response[1] = token + 1; // rollover automatically in 8-bit
-    send_response(response, 2);
-  }
+
+    // We'll respond with the same payload, except we increment payload[1].
+    // So the response payload size is the same as the incoming payload size.
+    uint8_t response[256];
+    response[0] = 0x01;            // same command
+    response[1] = token + 1;       // increment the token
+
+    // If there's extra data, copy it from payload[2..end]
+    for (int i = 2; i < payload_len; i++) {
+        response[i] = payload[i];
+    }
+
+    // total payload length = same as incoming
+    send_response(response, payload_len);
+    return;
+}
   // Otherwise, unknown command → respond with command=0xFF, echo entire payload
   else {
     uint8_t response[256];
@@ -155,10 +168,11 @@ static void parse_messages(void) {
     // Total message size is 1 + lengthField
     int needed = 1 + lengthField;
 
-    if (offset + needed > parseCount) {
-      // Not enough bytes received yet
-      break;
-    }
+	if (offset + needed > parseCount) {
+		// bogus length or incomplete data
+		offset += 1;  // skip one byte
+		continue;
+	}
 
     // Indices within the buffer
     int cursor = offset + 1; // position of CRC
@@ -177,7 +191,7 @@ static void parse_messages(void) {
     // (EOL/EOL)
     int payload_len = needed - 1 - 1 - 2 - 2;
     if (payload_len < 0) {
-      offset += needed;
+      offset += 1;
       continue;
     }
 
@@ -188,13 +202,13 @@ static void parse_messages(void) {
 
     // Validate we have space for EOLs
     if (eol2 >= PARSE_BUFFER_SIZE) {
-      offset += needed;
+      offset += 1;
       continue;
     }
 
     // Check EOL bytes
     if (parseBuffer[eol1] != EOL_BYTE || parseBuffer[eol2] != EOL_BYTE) {
-      offset += needed;
+      offset += 1;
       continue;
     }
 
@@ -211,13 +225,15 @@ static void parse_messages(void) {
 
     uint8_t calculated_crc = crc_checksum(calc_data, calc_len);
 
-    // Check CRC and device ID
-    if (calculated_crc == msgCRC) {
-      if (devId == 0x000A) {
-        // Handle payload
+	// Check CRC and devId
+	if (calculated_crc != msgCRC || devId != 0x000A) {
+		// Invalid CRC or wrong device -> skip 1 byte, keep going
+		offset += 1;
+		continue;
+	}
+
         handle_message_payload(&parseBuffer[payloadStart], payload_len);
-      }
-    }
+      
     // Advance offset to next message
     offset += needed;
   }

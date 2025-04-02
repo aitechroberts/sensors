@@ -49,7 +49,7 @@ void process(int value) {
 * message to uint16_t before using them. 
 */ 
 void receive(int message[], int length) {
-    transmit_array(message, length);
+    receive_all(message, length);
 }
 
 // -----------------------------------------------------
@@ -118,7 +118,7 @@ static void send_response(const uint8_t *payload, int payload_len) {
 }
 
 // Handle the valid message
-static void handle_message(const uint8_t *payload, int payload_len) {
+static void handle_message_payload(const uint8_t *payload, int payload_len) {
     if(payload_len < 1) {
         // No command byte? Ignore.
         return;
@@ -215,7 +215,7 @@ static void parse_messages(void) {
         if(calculated_crc == msgCRC) {
             if(devHigh == DEVICE_ID_HIGH && devLow == DEVICE_ID_LOW) {
                 // Handle payload
-                handle_payload(&parseBuffer[payloadStart], payload_len);
+                handle_message_payload(&parseBuffer[payloadStart], payload_len);
             }
         }
         // Advance offset to next message
@@ -239,7 +239,7 @@ static void parse_messages(void) {
 * the test harness.  As before, cast elements in the
 * message to uint16_t before using them. 
 */ 
-void receive(int message[], int length) {
+void receive_all(int message[], int length) {
     // Accumulate incoming data in parseBuffer
     for(int i = 0; i < length; i++) {
         // Per assignment instructions, cast to uint16_t before use

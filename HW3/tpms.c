@@ -88,8 +88,9 @@ static void send_response(const uint8_t *payload, int payload_len) {
   msg_out[idx++] = 0x00;         // placeholder for CRC
 
   // Device ID
-  msg_out[idx++] = DEVICE_ID_HIGH;
-  msg_out[idx++] = DEVICE_ID_LOW;
+  uint16_t deviceId = 0x000A;
+  msg_out[idx++] = (uint8_t)((deviceId >> 8) & 0xFF); // high byte
+  msg_out[idx++] = (uint8_t)(deviceId & 0xFF);        // low byte
 
   // Copy message payload
   for (int i = 0; i < payload_len; i++) {
@@ -168,8 +169,9 @@ static void parse_messages(void) {
     if (cursor + 1 >= PARSE_BUFFER_SIZE)
       break;
 
-    uint8_t devHigh = parseBuffer[cursor++];
-    uint8_t devLow = parseBuffer[cursor++];
+    uint16_t devId = ((uint16_t)parseBuffer[cursor] << 8) |
+                     ((uint16_t)parseBuffer[cursor + 1]);
+    cursor += 2;
 
     // The payload length = needed - 1 (Len field) - 1 (CRC) - 2 (DevID) - 2
     // (EOL/EOL)
@@ -211,7 +213,7 @@ static void parse_messages(void) {
 
     // Check CRC and device ID
     if (calculated_crc == msgCRC) {
-      if (devHigh == DEVICE_ID_HIGH && devLow == DEVICE_ID_LOW) {
+      if (devId == 0x000A) {
         // Handle payload
         handle_message_payload(&parseBuffer[payloadStart], payload_len);
       }

@@ -125,15 +125,13 @@ static void handle_message_payload(const uint8_t *payload, int payload_len) {
   if (command == 0x01) {
     // Must have at least 2 bytes: [0x01, token]
     if (payload_len < 2) {
-      // If there's only 1 byte (the command), we might treat it as invalid
-      // or we might silently ignore. Up to you; some tests require a response.
       return;
     }
     uint8_t token = payload[1];
 
     // We'll respond with the same payload, except we increment payload[1].
     // So the response payload size is the same as the incoming payload size.
-    uint8_t response[256];
+    uint8_t response[2];
     response[0] = 0x01;      // same command
     response[1] = token + 1; // increment the token
 
@@ -143,7 +141,7 @@ static void handle_message_payload(const uint8_t *payload, int payload_len) {
     }
 
     // total payload length = same as incoming
-    send_response(response, payload_len);
+    send_response(response, 2);
     return;
   }
   // Otherwise, unknown command → respond with command=0xFF, echo entire payload

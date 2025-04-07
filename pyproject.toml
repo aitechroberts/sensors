@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "systool-app"
+version = "0.1.0"
+description = ""
+authors = ["aitechroberts <jrobert2@andrew.cmu.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "^1.38.0"
+scikit-image = "^0.25.0"
+pyarrow = "^19.0.0"
+numpy = "^2.2.2"
+opencv-python = "^4.11.0.86"
+laspy = "^2.5.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

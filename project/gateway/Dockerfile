@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY gateway.py .
 
 # Run the gateway script
-CMD ["python", "pi_gateway.py"]
+CMD ["python", "gateway.py"]

@@ -12,6 +12,9 @@ WORKDIR /app
 # Copy source code into the container
 COPY vehicle_api vehicle_api
 
+# Make sure the binary is executable
+RUN chmod +x vehicle_api
+
 # Expose port 9090 for inbound connections
 EXPOSE 9090
 

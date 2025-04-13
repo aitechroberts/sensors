@@ -36,6 +36,9 @@ VEHICLE_STATUS = {  # Can hold more than one vehicle like this but doesn't have 
 def poll_vapi(vehicle_data):
     """
     Connect to VAPI via TCP, read the 26-byte struct, decode, and return as a dict.
+    :param vehicle_data  -> 2nd level dict of VEHICLE_STATUS table
+
+    returns updated vehicle_data dict
     """
     host = vehicle_data["host"]
     port = vehicle_data["port"]
@@ -45,10 +48,9 @@ def poll_vapi(vehicle_data):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(2.0)
 
-            print(f"Connecting to {host}")
+            print(f"[Gateway] Connecting to {host}")
             sock.connect((host, port))
-            print("Connection established. Reading data...")
-            vehicle_data["connected"] = True
+            print("[Gateway] Connection established. Reading data...")
 
             # Read 26 bytes vehicle struct
             raw_data = sock.recv(26)
@@ -69,6 +71,7 @@ def poll_vapi(vehicle_data):
                 err4
             ) = struct.unpack(STRUCT_FORMAT, raw_data)
 
+            vehicle_data["connected"] = True
             vehicle_data["latest_data"] = {
                 "oil_temp": oil_temp,
                 "maf": maf,
@@ -78,14 +81,14 @@ def poll_vapi(vehicle_data):
                 "fuel_consumption_rate": fuel_consumption_rate,
                 "error_codes": [hex(err1), hex(err2), hex(err3), hex(err4)]
             }
-            vehicle_data["timestamp"] = datetime.now().timestamp
+            vehicle_data["timestamp"] = datetime.now().timestamp()
 
     except Exception as e:
         vehicle_data["connected"] = False
         print(f"[Gateway] Error {e}, {host} not connected")
 
         # Return vehicle data dictionary
-        return vehicle_data
+    return vehicle_data
     
 def print_data():
     print("----- Vehicle Network Status -----")
@@ -94,15 +97,16 @@ def print_data():
         print(f"Vehicle: {v_id}")
         print(f"   Status: {status}")
         if info["latest_data"]:
+            ld = info["latest_data"]
             print("   Last Data:")
-            print(f"   Time: {info['timestamp']}")
-            print(f"       Oil Temp (F): {info['oil_temp']}")
-            print(f"       MAF: {info['maf']}")
-            print(f"       Battery Voltage: {info['battery_voltage']} V")
-            print(f"       Tire Pressure (psi): {info['tire_pressure_psi']}")
-            print(f"       Fuel Level (liters): {info['fuel_level_liters']}")
-            print(f"       Fuel Consumption (l/h): {info['fuel_consumption_rate']}")
-            print(f"       Error Codes: {info['error_codes']}")
+            print(f"   Time: {ld['timestamp']}")
+            print(f"       Oil Temp (F): {ld['oil_temp']}")
+            print(f"       MAF: {ld['maf']}")
+            print(f"       Battery Voltage: {ld['battery_voltage']} V")
+            print(f"       Tire Pressure (psi): {ld['tire_pressure_psi']}")
+            print(f"       Fuel Level (liters): {ld['fuel_level_liters']}")
+            print(f"       Fuel Consumption (l/h): {ld['fuel_consumption_rate']}")
+            print(f"       Error Codes: {ld['error_codes']}")
             if len(VEHICLE_STATUS.items()) > 1:
                 print("-------")
         else:
@@ -117,8 +121,8 @@ if __name__ == "__main__":
         while True:
             # get data for all vehicles in table
             try:
-                for vehicle_id, _ in VEHICLE_STATUS.items():
-                    VEHICLE_STATUS[vehicle_id] = poll_vapi(vehicle_id) # add new vehicle data to table
+                for vehicle_id, vehicle_dict in VEHICLE_STATUS.items():
+                    VEHICLE_STATUS[vehicle_id] = poll_vapi(vehicle_dict) # add new vehicle data to table
             except Exception as e:
                 print(f"[Gateway] Error while polling VAPI: {e}")
             print_data()

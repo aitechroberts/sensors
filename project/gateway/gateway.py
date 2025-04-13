@@ -99,7 +99,7 @@ def print_data():
         if info["latest_data"]:
             ld = info["latest_data"]
             print("   Last Data:")
-            print(f"   Time: {ld['timestamp']}")
+            print(f"   Time: {info['timestamp']}")
             print(f"       Oil Temp (F): {ld['oil_temp']}")
             print(f"       MAF: {ld['maf']}")
             print(f"       Battery Voltage: {ld['battery_voltage']} V")

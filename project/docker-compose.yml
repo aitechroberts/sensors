@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  vapi:
+    build: 
+      context: ./vapi  # folder with the VAPI Dockerfile & source
+    container_name: vapi
+    ports:
+      - "9090:9090"
+    networks:
+      - mynet
+    
+  gateway:
+    build: 
+      context: ./gateway  # folder with the Dockerfile & pi_gateway.py
+    container_name: gateway
+    depends_on:
+      - vapi
+    networks:
+      - mynet
+    # environment:
+    #   - VAPI_HOST=vapi
+    #   - VAPI_PORT=9090
+
+networks:
+  mynet:
+    driver: bridge

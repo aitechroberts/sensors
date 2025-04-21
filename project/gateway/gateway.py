@@ -4,6 +4,8 @@ import struct
 import time
 import sys
 from datetime import datetime
+import paho.mqtt.publish as publish
+import json
 
 """
 This script runs the Vehicle Gateway and connects to the
@@ -21,6 +23,7 @@ It reads the 26-byte data struct in the following format with Python conversion:
   uint32_t error_codes[4]           << IIII
 
 """ 
+BROKER_HOST = "broker" # docker service name
 STRUCT_FORMAT = "<HHBHHBIIII" # little endian
 
 VEHICLE_STATUS = {  # Can hold more than one vehicle like this but doesn't have to
@@ -82,6 +85,13 @@ def poll_vapi(vehicle_data):
                 "error_codes": [hex(err1), hex(err2), hex(err3), hex(err4)]
             }
             vehicle_data["timestamp"] = datetime.now().timestamp()
+
+            # broker info
+            if vehicle_data["connected"]:
+                topic_root = f"vehicle/{vehicle_id}"
+                for k, v in vehicle_data["latest_data"].items():
+                    payload = json.dumps(v) if isinstance(v, list) else str(v)
+                    publish.single(f"{topic_root}/{k}", payload, hostname=BROKER_HOST, port=1883)
 
     except Exception as e:
         vehicle_data["connected"] = False

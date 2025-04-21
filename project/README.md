@@ -4,6 +4,13 @@ Buid and Run the system using
 docker compose up --build
 ```
 
+ChatGPT provided nice little visual:
+┌─────────┐   TCP struct   ┌───────────┐  MQTT publish  ┌─────────┐
+│  VAPI   │ ─────────────► │  Gateway  │ ──────────────►│ Broker  │
+└─────────┘ 26 bytes/req   └───────────┘  topic:value    └─────────┘
+      ▲                                         │
+      └──────────────── docker network ─────────┘
+
 ## Contents
 -[Vehicle API](##vehicle-api)
     - [VAPI Overview](###overview)
@@ -11,6 +18,9 @@ docker compose up --build
     - [Build & Run](###vapi-build--run)
 -[Vehicle Gateway](##vehicle-gateway)
     - [Gateway Overview](###gateway-overview)
+-[Vehicle Broker](##vehicle-broker)
+    -[Broker Selection](###broker-selection)
+    -[Broker Overview](###broker-overview)
 
 ## Vehicle API
 
@@ -143,3 +153,20 @@ gateway  |        Error Codes: ['0x0', '0x0', '0x55', '0x0']
 gateway  | ----------------------------------
 gateway  | [Gateway] VAPI pull interval = 3s
 ```
+
+## Vehicle Broker
+This component provides an open-source, trusted, lightweight message broker using the MQTT protocol called Eclipse Mosquitto to provide message brokering inside the Vehicle Sensor System.
+
+### Broker Selection
+The Eclipse Mosquitto was chosen after a quick google serach for 'best mqtt brokers for iot'.Mosquitto was built specifically for embedded systems to facilitate machine to machine communication under low-bandwidth. It can handle thousands of connections with basic security mechanisms along with a message store feature for when services go offline making it ideal for this system, but would not be proper to use to in a large-scale deployment that requires advanced security capabilities. It also uses command line tools rather than a GUI as requested by professor. The following sources were used to select the MQTT broker:
+
+- [Mosquitto: Pros/Cons](https://www.emqx.com/en/blog/mosquitto-mqtt-broker-pros-cons-tutorial-and-modern-alternatives)
+- [Mosquitto: Comparison](https://marsbased.com/blog/2024/02/13/comparison-of-mqtt-brokers-for-iot)
+- [Documentation](https://mosquitto.org/documentation/)
+- [Docker Docs](https://hub.docker.com/_/eclipse-mosquitto)
+- [Example Implementation](https://github.com/sukesh-ak/setup-mosquitto-with-docker)
+- [In Depth Implementation](https://cedalo.com/blog/mosquitto-docker-configuration-ultimate-guide/)
+
+### Broker Overview
+The broker consists of the Dockerfile that pulls over the official mosquitto image, a logger.sh file that subscribes to and prints everything in lieu of a persistent data store, and a mosquitto.conf file that identifies the listener and logs everything to stdout as per rubric request.
+

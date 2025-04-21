@@ -15,11 +15,19 @@ services:
     container_name: gateway
     depends_on:
       - vapi
+      - broker
     networks:
       - mynet
     # environment:
     #   - VAPI_HOST=vapi
     #   - VAPI_PORT=9090
+  
+  broker:
+    build:
+      context: ./broker
+    container_name: broker
+    ports:
+      - "1883:1883"
 
 networks:
   mynet:

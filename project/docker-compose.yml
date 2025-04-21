@@ -28,6 +28,8 @@ services:
     container_name: broker
     ports:
       - "1883:1883"
+    networks:
+      - mynet
 
 networks:
   mynet:

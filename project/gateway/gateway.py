@@ -36,7 +36,7 @@ VEHICLE_STATUS = {  # Can hold more than one vehicle like this but doesn't have 
     }
 }
 
-def poll_vapi(vehicle_data):
+def poll_vapi(vehicle_id, vehicle_data):
     """
     Connect to VAPI via TCP, read the 26-byte struct, decode, and return as a dict.
     :param vehicle_data  -> 2nd level dict of VEHICLE_STATUS table
@@ -89,10 +89,23 @@ def poll_vapi(vehicle_data):
             # broker info
             if vehicle_data["connected"]:
                 topic_root = f"vehicle/{vehicle_id}"
-                for k, v in vehicle_data["latest_data"].items():
-                    payload = json.dumps(v) if isinstance(v, list) else str(v)
-                    publish.single(f"{topic_root}/{k}", payload, hostname=BROKER_HOST, port=1883)
-
+                ''' SINGLE MESSAGE PER SENSOR STYLE: VERY BUSY LOGS'''
+                # for k, v in vehicle_data["latest_data"].items():
+                #     payload = json.dumps(v) if isinstance(v, list) else str(v)
+                #     publish.single(f"{topic_root}/{k}", payload, hostname=BROKER_HOST, port=1883)
+                ''' BATCH PUBLISH SENSOR DATA'''
+                msgs = [
+                    {
+                        "topic": f"{topic_root}/{k}",
+                        "payload": (
+                            json.dumps(v) if isinstance(v, list) else str(v)
+                        ),
+                        "qos": 0,
+                        "retain": False,
+                    }
+                    for k, v in vehicle_data["latest_data"].items()
+                ]
+                publish.multiple(msgs, hostname=BROKER_HOST, port=1883)
     except Exception as e:
         vehicle_data["connected"] = False
         print(f"[Gateway] Error {e}, {host} not connected")
@@ -132,7 +145,7 @@ if __name__ == "__main__":
             # get data for all vehicles in table
             try:
                 for vehicle_id, vehicle_dict in VEHICLE_STATUS.items():
-                    VEHICLE_STATUS[vehicle_id] = poll_vapi(vehicle_dict) # add new vehicle data to table
+                    VEHICLE_STATUS[vehicle_id] = poll_vapi(vehicle_id,vehicle_dict) # add new vehicle data to table
             except Exception as e:
                 print(f"[Gateway] Error while polling VAPI: {e}")
             print_data()

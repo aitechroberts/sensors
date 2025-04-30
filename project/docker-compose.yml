@@ -1,36 +1,61 @@
-version: '3.8'
+version: "3.8"
+
 services:
+# ────────────────────────────────────────────────────────── core
   vapi:
-    build: 
-      context: ./vapi  # folder with the VAPI Dockerfile & source
+    build: { context: ./vapi }
     container_name: vapi
-    ports:
-      - "9090:9090"
-    networks:
-      - mynet
-    
+    ports: ["9090:9090"]
+    networks: [mynet]
+    logging: { driver: "json-file" }   # stdout visible for transparency
+
   gateway:
-    build: 
-      context: ./gateway  # folder with the Dockerfile & pi_gateway.py
+    build: { context: ./gateway }      # see Dockerfile changes below
     container_name: gateway
-    depends_on:
-      - vapi
-      - broker
-    networks:
-      - mynet
-    # environment:
-    #   - VAPI_HOST=vapi
-    #   - VAPI_PORT=9090
-  
+    depends_on: [vapi, broker]
+    networks: [mynet]
+    environment:
+      MQTT_BROKER: broker
+    ports: ["9000:9000"]               # mqtt-exporter metrics
+    logging: { driver: "json-file" }
+    volumes:
+    - ./monitoring/mqtt-exporter-config.yml:/app/mqtt-exporter-config.yml:ro
+
   broker:
-    build:
-      context: ./broker
+    build: { context: ./broker }
     container_name: broker
-    ports:
-      - "1883:1883"
-    networks:
-      - mynet
+    ports: ["1883:1883"]
+    networks: [mynet]
+    logging: { driver: "json-file" }
+
+# ────────────────────────────────────────────────────────── monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [mynet]
+    ports: ["9091:9090"]               # avoid clash with VAPI 9090
+    restart: unless-stopped
+    logging: { driver: "json-file" }
+
+  dashboard:                           # grafana
+    image: grafana/grafana:latest
+    container_name: dashboard
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks: [mynet]
+    ports: ["3000:3000"]
+    restart: unless-stopped
+    logging: { driver: "json-file" }
 
 networks:
-  mynet:
-    driver: bridge
+  mynet: { driver: bridge }
+
+volumes:
+  prom_data:
+  grafana_data:

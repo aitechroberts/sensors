@@ -1,0 +1,31 @@
+mqtt:
+  host: ${MQTT_BROKER}
+  port: 1883
+  keepalive: 60
+
+metrics:
+# ── RAW VAPI data ─────────────────────────────────────────────────
+  - name: vapi_adc_count
+    help: Raw 12-bit ADC count
+    type: gauge
+    topic: vapi/+/adc_count         # e.g. vapi/veh42/adc_count
+    labels: { vehicle: "$1" }
+
+  - name: vapi_oil_temp_c
+    help: Oil temperature (°C) direct from sensor
+    type: gauge
+    topic: vapi/+/oil_temp
+    labels: { vehicle: "$1" }
+
+# ── GATEWAY-PROCESSED data ────────────────────────────────────────
+  - name: vehicle_oil_temp_f
+    help: Converted oil temperature (°F)
+    type: gauge
+    topic: vehicle/+/oil_temp_f     # produced by gateway
+    labels: { vehicle: "$1" }
+
+  - name: vehicle_status
+    help: Fleet status 1=OK, 0=offline
+    type: gauge
+    topic: vehicle/+/status
+    labels: { vehicle: "$1" }

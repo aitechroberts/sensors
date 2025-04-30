@@ -1,13 +1,17 @@
-# Lightweight MQTT broker with built‑in message “echo”
+# ---- Lightweight MQTT broker with built-in “echo” subscriber ----
 FROM eclipse-mosquitto:2.0
 
-# broker config
+WORKDIR /app                    # keep helper scripts together
+
+# ---------- broker configuration ----------
 COPY mosquitto.conf /mosquitto/config/mosquitto.conf
 
-# logs subscriber to every topic and prints payloads
-COPY logger.sh /logger.sh
-RUN chmod +x /logger.sh
+# ---------- helper scripts ----------
+COPY logger.sh      /app/logger.sh
+COPY entrypoint.sh  /app/entrypoint.sh
+RUN chmod +x /app/*.sh          # make both scripts executable
 
-# two long‑running processes: broker + stdout logger
-CMD sh -c "mosquitto -c /mosquitto/config/mosquitto.conf & \
-            sleep 2 && /logger.sh"
+# ---------- runtime ----------
+EXPOSE 1883
+ENTRYPOINT ["/app/entrypoint.sh"]
+        

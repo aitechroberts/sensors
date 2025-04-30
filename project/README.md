@@ -1,8 +1,17 @@
 # Vehicle Sensor System
-Buid and Run the system using
+This system is a 5 container system encompassing a Vehicle Sensor API, a Gateway, a Broker, and a Monitoring system consisting of Prometheus and Grafana. 
+
+### Quickstart
+Build and Run the system using
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
+
+Open the following browser tabs:
+`localhost:3000` - login to Grafana with admin/admin
+`localhost:9091`  - Prometheus
+
+Create your queries and/or custom dashboards for the metrics to visualize the feedback using the `mqtt_`prefix to metrics seen in [Vehicle API](##vehicle-api)
 
 ChatGPT provided nice little visual:
 ┌─────────┐   TCP struct   ┌───────────┐  MQTT publish  ┌─────────┐
@@ -21,6 +30,11 @@ ChatGPT provided nice little visual:
 -[Vehicle Broker](##vehicle-broker)
     -[Broker Selection](###broker-selection)
     -[Broker Overview](###broker-overview)
+-[Vehicle Monitoring](##vehicle-monitoring--observability)
+    - [Monitoring Architecture](###monitoring-architecture)
+    - [Monitoring System](###monitoring-system)
+    - [Monitoring Troubleshooting](###monitoring-troubleshooting)
+
 
 ## Vehicle API
 
@@ -170,3 +184,45 @@ The Eclipse Mosquitto was chosen after a quick google serach for 'best mqtt brok
 ### Broker Overview
 The broker consists of the Dockerfile that pulls over the official mosquitto image, a logger.sh file that subscribes to and prints everything in lieu of a persistent data store, and a mosquitto.conf file that identifies the listener and logs everything to stdout as per rubric request.
 
+
+## Vehicle Monitoring & Observability
+This component stack adds **Prometheus + Grafana** on top of the broker to satisfy every Functional and Non-Functional requirement in the rubric providing a user friendly interface to continuously monitor the vehicle metrics.
+
+### Monitoring Architecture
+```text
+            ┌────────────┐   MQTT   ┌─────────┐
+            │  Gateway   │─────────►│ Broker  │
+            │  (Python)  │          └─────────┘
+            │            │               │
+            │  mqtt-exporter            (scrape :9000)
+            └──────┬─────┘               │
+                   ▼                     ▼
+            ┌────────────┐  HTTP  ┌────────────┐
+            │ Prometheus │◄───────│  Grafana   │
+            └────────────┘        └────────────┘
+```
+
+### Monitoring System
+MQTT-Exporter converts MQTT topics published from the Gateway to the Broker into Prometheus metrics (mqtt_oil_temp, mqtt_battery_voltage, …). Prometheus scrapes those metrics every 15 seconds and stores them in its time-series database while Grafana visualizes the live and/or historical data depending on how the user configures the dashboard.
+
+Prometheus Visual:
+![alt text](image.png)
+
+Grafana Visual:
+![alt text](image-1.png)
+![alt text](image-2.png)
+
+### Monitoring Troubleshooting
+If Prometheus or Grafana are not receiving the metrics to create the visualizations you can put the following commands in to terminal to ensure data communication.
+
+```bash
+# 1 MQTT flow is visible
+docker exec -it broker mosquitto_sub -v -t 'vehicle/#'
+
+# 2 Exporter emits samples
+curl http://localhost:9000/metrics | grep mqtt_oil_temp | head
+
+# 3 Prometheus target is UP
+curl -s http://localhost:9091/api/v1/targets | jq '.data.activeTargets[] |
+     select(.labels.job=="mqtt-exporter") | {scrapeUrl,health}'
+```

@@ -19,7 +19,7 @@ services:
     ports: ["9000:9000"]               # mqtt-exporter metrics
     logging: { driver: "json-file" }
     volumes:
-    - ./monitoring/mqtt-exporter-config.yml:/app/mqtt-exporter-config.yml:ro
+      - ./monitoring/mqtt-exporter-config.yml:/app/mqtt-exporter-config.yml:ro
 
   broker:
     build: { context: ./broker }
